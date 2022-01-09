@@ -1,0 +1,190 @@
+[
+  {
+    "name": "bbc",
+    "link": "https://www.bbc.co.uk",
+    "rules": [
+      [
+        "span",
+        {
+          "aria-hidden": "true"
+        }
+      ],
+      [
+        "span",
+        {
+          "aria-hidden": "false"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "guardian",
+    "link": "https://www.theguardian.com/uk",
+    "rules": [
+      [
+        "a",
+        {
+          "data-link-name": "article"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "independent",
+    "link": "https://www.independent.co.uk",
+    "rules": [
+      [
+        0,
+        {
+          "class": "headline"
+        }
+      ],
+      [
+        "h2",
+        0
+      ]
+    ]
+  },
+  {
+    "name": "telegraph",
+    "link": "https://www.telegraph.co.uk",
+    "rules": [
+      [
+        0,
+        {
+          "class": "list-headline__text"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "dailymail",
+    "link": "https://www.dailymail.co.uk",
+    "rules": [
+      [
+        "a",
+        {
+          "itemprop": "url"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "sun",
+    "link": "https://www.thesun.co.uk",
+    "rules": [
+      [
+        "p",
+        {
+          "class": "teaser__subdeck"
+        }
+      ]
+    ]
+  },
+  {
+    "name": "mirror",
+    "link": "https://www.mirror.co.uk",
+    "rules": [
+        [
+          "h2",
+          0
+        ]
+    ]
+  },
+  {
+    "name": "express",
+    "link": "https://www.express.co.uk",
+    "rules": [
+      [
+        "h2",
+        0
+      ],
+      [
+        "h4",
+        0
+      ]
+    ]
+  },
+  {
+    "link": "https://www.standard.co.uk/",
+    "name": "standard",
+    "rules": [
+      [
+        "div",
+        {
+          "class": "headline"
+        }
+      ],
+      [
+        "h2",
+        0
+      ]
+    ]
+  },
+  {
+    "link": "https://www.dailystar.co.uk/",
+    "name": "star",
+    "rules": [
+      [
+        "a",
+        {
+          "class": "headline"
+        }
+      ]
+    ]
+  },
+  {
+    "link": "https://metro.co.uk/",
+    "name": "metro",
+    "rules": [
+      [
+        "h3",
+        0
+      ]
+    ]
+  },
+  {
+    "link": "https://www.thetimes.co.uk/",
+    "name": "times",
+    "rules": [
+      [
+        "h3",
+        0
+      ]
+    ]
+  },
+  {
+    "link": "https://www.theweek.co.uk/",
+    "name": "week",
+    "rules": [
+      [
+        0,
+        {
+          "class": "screen-reader-text"
+        }
+      ]
+    ]
+  },
+  {
+    "link": "https://www.ft.com/",
+    "name": "ft",
+    "rules": [
+      [
+        "a",
+        {
+          "class": "js-teaser-heading-link"
+        }
+      ]
+    ]
+  },
+  {
+    "link": "https://inews.co.uk/",
+    "name": "inews",
+    "rules": [
+      [
+        "h2",
+        0
+      ]
+    ]
+  }
+]

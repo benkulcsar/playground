@@ -1,0 +1,9 @@
+old
+**/old
+tmp*
+venv*
+*.log
+*.ods*
+*.odc*
+**/__pycache__
+*.pyc
