@@ -21,4 +21,5 @@ docker run --rm \
     -p 443:443 \
     -p 5432:5432 \
     benkl/playground \
-    /bin/bash -c "python ./extract/get_reddit_data.py && python ./extract/scrape_news_sites.py"
+    /bin/bash -c "python ./extract/get_reddit_data.py --test && python ./extract/scrape_news_sites.py --test"
+

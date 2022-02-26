@@ -1,10 +1,11 @@
+import sys
 from datetime import datetime, timedelta
 from db_operations import execute_sql
 from reddit_api_interface import api_auth, fetch_posts
 
 # Global vars
 posts_to_fetch = 100
-table_name = 'reddit_data'
+table_name_base = 'reddit_data'
 subreddits = ('australia,unitedkingdom,russia,poland,india,canada,germany,'
               'france,dataisbeautiful,funny,gaming,aww,Music,pics,'
               'worldnews,science,todayilearned,movies,videos,news,'
@@ -13,7 +14,7 @@ subreddits = ('australia,unitedkingdom,russia,poland,india,canada,germany,'
               'nosleep,personalfinance,politics')
 
 
-def create_table():
+def create_table(table_name):
     create_sql = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             apicall_date date,
@@ -33,8 +34,11 @@ def create_table():
     execute_sql(sql=create_sql)
 
 
-def create_partition(date_stamp, date_stamp_next_date):
+def create_partition(table_name, date_stamp, date_stamp_next_date):
     partition_name = "rd_" + date_stamp.replace("-", "_")
+    if table_name[:4] == 'test':
+        partition_name = 'test_' + partition_name
+
     create_partition_sql = f"""
         CREATE TABLE IF NOT EXISTS {partition_name}
         PARTITION OF {table_name}
@@ -43,7 +47,7 @@ def create_partition(date_stamp, date_stamp_next_date):
     execute_sql(sql=create_partition_sql)
 
 
-def insert_data(filtered_enriched_post_list):
+def insert_data(table_name, filtered_enriched_post_list):
     insert_sql = f"""
         INSERT INTO {table_name}
             (subreddit,name,ups,created_utc,upvote_ratio,num_comments,
@@ -88,13 +92,15 @@ def filter_enrich_post_list(post_list):
     return filtered_enriched_post_list
 
 
-def pipeline():
-    create_table()
+def pipeline(is_test):
+    table_name = table_name_base if not is_test else 'test_' + table_name_base
+    
+    create_table(table_name)
 
     date_stamp = datetime.today().strftime("%Y-%m-%d")
     date_stamp_next_date = (datetime.today() + timedelta(days=1)) \
         .strftime("%Y-%m-%d")
-    create_partition(date_stamp, date_stamp_next_date)
+    create_partition(table_name, date_stamp, date_stamp_next_date)
 
     subreddit_list = sorted(list(set(subreddits.split(','))))
 
@@ -107,8 +113,11 @@ def pipeline():
 
         filtered_enriched_post_list = filter_enrich_post_list(post_list)
 
-        insert_data(filtered_enriched_post_list)
+        insert_data(table_name, filtered_enriched_post_list)
+
+        if is_test: break
 
 
 if __name__ == '__main__':
-    pipeline()
+    is_test = any(test_flag in sys.argv for test_flag in ['test', '--test'])
+    pipeline(is_test)
