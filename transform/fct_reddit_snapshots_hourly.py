@@ -8,11 +8,7 @@ from common.db_operations import execute_sql, create_partition
 SOURCE_TABLE_NAME_BASE = 'reddit_data'
 TARGET_TABLE_NAME_BASE = 'fct_reddit_snapshots_hourly'
 TARGET_PARTITION_PREFIX_BASE ='frsh_'
-
-# For a given snapshotted_on and snapshotted_hour (for now, hardcode it)
-# (later: figure out which "snapshotted_on" and "snapshotted_hour" combinations we need)
-snapshotted_on = '2022-02-26'
-snapshotted_hour = 18
+FACT_BACKFILL_LOOKBACK_DAYS = 3
 
 
 def create_table(table_name):
@@ -36,13 +32,37 @@ def create_table(table_name):
     execute_sql(sql=create_sql)
 
 
-def delete_existing_target_rows(target_table_name, snapshotted_on, snapshotted_hour):
-    delete_sql = f"""
-        DELETE FROM {target_table_name}
-        WHERE snapshotted_on = '{snapshotted_on}'
-        AND snapshotted_hour = {snapshotted_hour}
+def get_missing_date_hours(source_table_name, target_table_name):
+    diff_sql = f"""
+        with date_hours_in_raw_table as (
+            select distinct 
+                apicall_date as snapshotted_on, 
+                extract(hour from apicall_time) as snapshotted_hour
+            from {source_table_name} 
+            where apicall_date > now()::DATE - {FACT_BACKFILL_LOOKBACK_DAYS}
+        ),
+
+        date_hours_in_fact_table as (
+            select distinct 
+                snapshotted_on, 
+                snapshotted_hour
+            from {target_table_name} 
+            where snapshotted_on > now()::DATE - {FACT_BACKFILL_LOOKBACK_DAYS}
+        )
+
+        select 
+            r.snapshotted_on::VARCHAR,
+            r.snapshotted_hour::INTEGER
+        from date_hours_in_raw_table r
+        left join date_hours_in_fact_table f
+        on r.snapshotted_on=f.snapshotted_on
+        and r.snapshotted_hour=f.snapshotted_hour
+        where f.snapshotted_on is null
+        and f.snapshotted_hour is null
+        order by 1,2;
     """
-    execute_sql(sql=delete_sql)
+    missing_date_hours = execute_sql(sql=diff_sql)
+    return missing_date_hours
 
 
 def transform_reddit_data(source_table_name, 
@@ -110,17 +130,18 @@ def pipeline(is_test):
     target_table_name = TARGET_TABLE_NAME_BASE if not is_test else 'test_' + TARGET_TABLE_NAME_BASE
     target_partition_prefix = TARGET_PARTITION_PREFIX_BASE if not is_test else 'test_' + TARGET_PARTITION_PREFIX_BASE
 
-    # date_stamp = datetime.today().strftime("%Y-%m-%d")
-
     create_table(target_table_name)
-    create_partition(target_table_name, target_partition_prefix, snapshotted_on)
 
-    delete_existing_target_rows(target_table_name, snapshotted_on, snapshotted_hour)
+    missing_date_hours = get_missing_date_hours(source_table_name, target_table_name)
 
-    transform_reddit_data(source_table_name, 
-                          target_table_name,
-                          snapshotted_on, 
-                          snapshotted_hour)
+    for missing_date_partition in set([date_hour[0] for date_hour in missing_date_hours]):
+        create_partition(target_table_name, target_partition_prefix, date_stamp=missing_date_partition)
+
+    for date_hour in missing_date_hours:
+        transform_reddit_data(source_table_name, 
+                              target_table_name,
+                              snapshotted_on=date_hour[0], 
+                              snapshotted_hour=date_hour[1])
 
 
 if __name__ == '__main__':
