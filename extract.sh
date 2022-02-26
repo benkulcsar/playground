@@ -4,6 +4,12 @@ set -o xtrace
 
 cd "$(dirname "$0")"
 
+if [ "$1" == "--test" ] || [ "$1" == "test" ]; then 
+    DOCKER_CMD="export PYTHONPATH=/home/ && python ./extract/get_reddit_data.py --test && python ./extract/scrape_news_sites.py --test"
+else
+    DOCKER_CMD="export PYTHONPATH=/home/ && python ./extract/get_reddit_data.py && python ./extract/scrape_news_sites.py"
+fi
+
 docker run --rm \
     -e PG_DB_HOST=$PG_DB_HOST \
     -e PG_DB_PORT=$PG_DB_PORT \
@@ -21,4 +27,4 @@ docker run --rm \
     -p 443:443 \
     -p 5432:5432 \
     benkl/playground \
-    /bin/bash -c "python ./extract/get_reddit_data.py && python ./extract/scrape_news_sites.py"
+    /bin/bash -c "$DOCKER_CMD"

@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta
 
 from title_list_scraper import get_title_list_from_site
-from db_operations import execute_sql
+from common.db_operations import execute_sql
 
 # Global vars
 table_name_base = 'scraped_titles'

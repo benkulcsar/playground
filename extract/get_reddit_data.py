@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime, timedelta
-from db_operations import execute_sql
+from common.db_operations import execute_sql
 from reddit_api_interface import api_auth, fetch_posts
 
 # Global vars
