@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 import psycopg2
 
 
@@ -31,3 +32,18 @@ def execute_sql(sql, rows=None):
         result = None
     db_close(conn)
     return result
+
+
+def create_partition(table_name, partition_prefix, date_stamp):
+
+    partition_name = partition_prefix + date_stamp.replace("-", "_")
+
+    date_stamp_next_date = (datetime.today() + timedelta(days=1)) \
+        .strftime("%Y-%m-%d")
+    
+    create_partition_sql = f"""
+        CREATE TABLE IF NOT EXISTS {partition_name}
+        PARTITION OF {table_name}
+        FOR VALUES FROM ('{date_stamp}') TO ('{date_stamp_next_date}');
+    """
+    execute_sql(sql=create_partition_sql)

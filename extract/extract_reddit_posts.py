@@ -1,12 +1,14 @@
 import sys
-from datetime import datetime, timedelta
-from common.db_operations import execute_sql
-from reddit_api_interface import api_auth, fetch_posts
+from datetime import datetime
 
-# Global vars
-posts_to_fetch = 100
-table_name_base = 'reddit_data'
-subreddits = ('australia,unitedkingdom,russia,poland,india,canada,germany,'
+from common.db_operations import execute_sql, create_partition
+from reddit_posts_extract_modules.reddit_api_interface import api_auth, fetch_posts
+
+# Global constants
+POSTS_TO_FETCH = 100
+TABLE_NAME_BASE = 'reddit_data'
+PARTITION_PREFIX_BASE = "rd_"
+SUBREDDITS = ('australia,unitedkingdom,russia,poland,india,canada,germany,'
               'france,dataisbeautiful,funny,gaming,aww,Music,pics,'
               'worldnews,science,todayilearned,movies,videos,news,'
               'Showerthoughts,EarthPorn,hungary,datascience,romania,'
@@ -32,19 +34,6 @@ def create_table(table_name):
         PARTITION BY RANGE (apicall_date);
     """
     execute_sql(sql=create_sql)
-
-
-def create_partition(table_name, date_stamp, date_stamp_next_date):
-    partition_name = "rd_" + date_stamp.replace("-", "_")
-    if table_name[:4] == 'test':
-        partition_name = 'test_' + partition_name
-
-    create_partition_sql = f"""
-        CREATE TABLE IF NOT EXISTS {partition_name}
-        PARTITION OF {table_name}
-        FOR VALUES FROM ('{date_stamp}') TO ('{date_stamp_next_date}');
-    """
-    execute_sql(sql=create_partition_sql)
 
 
 def insert_data(table_name, filtered_enriched_post_list):
@@ -80,7 +69,7 @@ def filter_enrich_post_list(post_list):
             datetime.fromtimestamp(post['data']['created_utc'])
             .strftime('%Y-%m-%d %H:%M:%S'))
 
-        d = post['data']
+        d = post['data']  # Single letter variable for readability
         downs_est = int(
             (d['ups'] - d['ups']*d['upvote_ratio']) / d['upvote_ratio'])
 
@@ -93,22 +82,20 @@ def filter_enrich_post_list(post_list):
 
 
 def pipeline(is_test):
-    table_name = table_name_base if not is_test else 'test_' + table_name_base
+    table_name = TABLE_NAME_BASE if not is_test else 'test_' + TABLE_NAME_BASE
+    partition_prefix = PARTITION_PREFIX_BASE if not is_test else 'test_' + PARTITION_PREFIX_BASE
+    date_stamp = datetime.today().strftime("%Y-%m-%d")
     
     create_table(table_name)
+    create_partition(table_name, partition_prefix, date_stamp)
 
-    date_stamp = datetime.today().strftime("%Y-%m-%d")
-    date_stamp_next_date = (datetime.today() + timedelta(days=1)) \
-        .strftime("%Y-%m-%d")
-    create_partition(table_name, date_stamp, date_stamp_next_date)
-
-    subreddit_list = sorted(list(set(subreddits.split(','))))
+    subreddit_list = sorted(list(set(SUBREDDITS.split(','))))
 
     TOKEN = api_auth()
 
     for subreddit in subreddit_list:
         post_list = fetch_posts(subreddit=subreddit,
-                                post_count=posts_to_fetch,
+                                post_count=POSTS_TO_FETCH,
                                 TOKEN=TOKEN)
 
         filtered_enriched_post_list = filter_enrich_post_list(post_list)
