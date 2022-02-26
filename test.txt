@@ -1,0 +1,32 @@
+
+        CREATE TABLE IF NOT EXISTS test_fct_reddit_snapshots_hourly (
+            snapshotted_on DATE,
+            snapshotted_hour INTEGER,
+            post_id VARCHAR,
+            snapshotted_at TIME,
+            subreddit VARCHAR,
+            upvote_count INTEGER,
+            downvote_count INTEGER,
+            upvote_ratio FLOAT,
+            comment_count INTEGER,
+            award_count INTEGER,
+            post_created_at VARCHAR,
+	        PRIMARY KEY (snapshotted_on, snapshotted_hour, post_id))
+	    PARTITION BY RANGE (snapshotted_on);
+    
+
+        CREATE TABLE IF NOT EXISTS test_fct_reddit_snapshots_hourly (
+            snapshotted_on DATE,
+            snapshotted_hour INTEGER,
+            post_id VARCHAR,
+            snapshotted_at TIME,
+            subreddit VARCHAR,
+            upvote_count INTEGER,
+            downvote_count INTEGER,
+            upvote_ratio FLOAT,
+            comment_count INTEGER,
+            award_count INTEGER,
+            post_created_at VARCHAR,
+	        PRIMARY KEY (snapshotted_on, snapshotted_hour, post_id))
+	    PARTITION BY RANGE (snapshotted_on);
+    

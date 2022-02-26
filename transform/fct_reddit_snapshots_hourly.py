@@ -12,7 +12,7 @@ TARGET_PARTITION_PREFIX_BASE ='frsh_'
 # For a given snapshotted_on and snapshotted_hour (for now, hardcode it)
 # (later: figure out which "snapshotted_on" and "snapshotted_hour" combinations we need)
 snapshotted_on = '2022-02-26'
-snapshotted_hour = 17
+snapshotted_hour = 18
 
 
 def create_table(table_name):

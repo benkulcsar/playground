@@ -5,9 +5,9 @@ set -o xtrace
 cd "$(dirname "$0")"
 
 if [ "$1" == "--test" ] || [ "$1" == "test" ]; then 
-    DOCKER_CMD="export PYTHONPATH=/home/ && python ./transform/fct_reddit_snapshots_hourly.py --test >> test.txt"
+    DOCKER_CMD="export PYTHONPATH=/home/ && python ./transform/fct_reddit_snapshots_hourly.py --test && python ./transform/agg_subreddit_metrics_hourly.py --test"
 else
-    DOCKER_CMD="export PYTHONPATH=/home/ && python ./transform/fct_reddit_snapshots_hourly.py"
+    DOCKER_CMD="export PYTHONPATH=/home/ && python ./transform/fct_reddit_snapshots_hourly.py && python ./transform/agg_subreddit_metrics_hourly.py"
 fi
 
 docker run --rm \
