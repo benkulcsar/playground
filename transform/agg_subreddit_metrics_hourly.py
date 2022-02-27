@@ -12,7 +12,8 @@ SOURCE_DATE_FIELD = 'snapshotted_on'
 SOURCE_HOUR_FIELD = 'snapshotted_hour'
 TARGET_DATE_FIELD = 'snapshotted_on'
 TARGET_HOUR_FIELD = 'snapshotted_hour'
-AGG_BACKFILL_LOOKBACK_DAYS = 3
+AGG_BACKFILL_LOOKBACK_DAYS = 28
+AGG_SELF_JOIN_LOOKBACK_DAYS = 2
 
 
 def create_table(table_name):
@@ -53,7 +54,7 @@ def aggregate_reddit_data(source_table_name,
             from 
                 {source_table_name}
             where 
-                snapshotted_on BETWEEN '{snapshotted_on}'::DATE - {AGG_BACKFILL_LOOKBACK_DAYS} AND '{snapshotted_on}'
+                snapshotted_on BETWEEN '{snapshotted_on}'::DATE - {AGG_SELF_JOIN_LOOKBACK_DAYS} AND '{snapshotted_on}'
         ),
 
         reddit_metric_diffs_from_consecutive_snapshots as (

@@ -13,7 +13,7 @@ SOURCE_DATE_FIELD = 'apicall_date'
 SOURCE_HOUR_FIELD = 'extract(hour from apicall_time)'
 TARGET_DATE_FIELD = 'snapshotted_on'
 TARGET_HOUR_FIELD = 'snapshotted_hour'
-FACT_BACKFILL_LOOKBACK_DAYS = 3
+FACT_BACKFILL_LOOKBACK_DAYS = 28
 
 
 def create_table(table_name):

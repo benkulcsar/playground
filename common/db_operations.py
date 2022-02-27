@@ -36,8 +36,9 @@ def execute_sql(sql, rows=None):
 
 def create_partition(table_name, partition_prefix, date_stamp):
     partition_name = partition_prefix + date_stamp.replace("-", "_")
-    date_stamp_next_date = (datetime.today() + timedelta(days=1)) \
-        .strftime("%Y-%m-%d")
+    date_stamp_next_date = (
+        datetime.strptime(date_stamp, "%Y-%m-%d") 
+        + timedelta(days=1)).strftime("%Y-%m-%d")
     
     create_partition_sql = f"""
         CREATE TABLE IF NOT EXISTS {partition_name}
