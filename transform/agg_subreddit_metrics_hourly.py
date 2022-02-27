@@ -31,40 +31,6 @@ def create_table(table_name):
     execute_sql(sql=create_sql)
 
 
-# def get_missing_date_hours(source_table_name, target_table_name):
-#     diff_sql = f"""
-#         with date_hours_in_fact_table as (
-#             select distinct 
-#                 snapshotted_on, 
-#                 snapshotted_hour
-#             from {source_table_name} 
-#             where snapshotted_on > now()::DATE - {AGG_BACKFILL_LOOKBACK_DAYS}
-#         ),
-
-#         date_hours_in_agg_table as (
-#             select distinct 
-#                 snapshotted_on, 
-#                 snapshotted_hour
-#             from {target_table_name} 
-#             where snapshotted_on > now()::DATE - {AGG_BACKFILL_LOOKBACK_DAYS}
-#         )
-
-#         select 
-#             f.snapshotted_on::VARCHAR,
-#             f.snapshotted_hour::INTEGER
-#         from date_hours_in_fact_table f
-#         left join date_hours_in_agg_table a
-#         on f.snapshotted_on=a.snapshotted_on
-#         and f.snapshotted_hour=a.snapshotted_hour
-#         where a.snapshotted_on is null
-#         and a.snapshotted_hour is null
-#         order by 1,2;
-#     """
-#     missing_date_hours = execute_sql(sql=diff_sql)
-#     print(missing_date_hours)
-#     return missing_date_hours
-
-
 def aggregate_reddit_data(source_table_name, 
                           target_table_name,
                           snapshotted_on, 
