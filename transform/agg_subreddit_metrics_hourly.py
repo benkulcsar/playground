@@ -1,12 +1,17 @@
 import sys
 from datetime import datetime
 
-from common.db_operations import execute_sql, create_partition
+from common.db_operations import execute_sql, create_partition, get_missing_date_hours
 
 
 # Global constants
 SOURCE_TABLE_NAME_BASE = 'fct_reddit_snapshots_hourly'
 TARGET_TABLE_NAME_BASE = 'agg_subreddit_metrics_hourly'
+
+SOURCE_DATE_FIELD = 'snapshotted_on'
+SOURCE_HOUR_FIELD = 'snapshotted_hour'
+TARGET_DATE_FIELD = 'snapshotted_on'
+TARGET_HOUR_FIELD = 'snapshotted_hour'
 AGG_BACKFILL_LOOKBACK_DAYS = 3
 
 
@@ -23,41 +28,41 @@ def create_table(table_name):
             awards INTEGER
         );
     """
-    print(create_sql)
     execute_sql(sql=create_sql)
 
 
-def get_missing_date_hours(source_table_name, target_table_name):
-    diff_sql = f"""
-        with date_hours_in_fact_table as (
-            select distinct 
-                snapshotted_on, 
-                snapshotted_hour
-            from {source_table_name} 
-            where snapshotted_on > now()::DATE - {AGG_BACKFILL_LOOKBACK_DAYS}
-        ),
+# def get_missing_date_hours(source_table_name, target_table_name):
+#     diff_sql = f"""
+#         with date_hours_in_fact_table as (
+#             select distinct 
+#                 snapshotted_on, 
+#                 snapshotted_hour
+#             from {source_table_name} 
+#             where snapshotted_on > now()::DATE - {AGG_BACKFILL_LOOKBACK_DAYS}
+#         ),
 
-        date_hours_in_agg_table as (
-            select distinct 
-                snapshotted_on, 
-                snapshotted_hour
-            from {target_table_name} 
-            where snapshotted_on > now()::DATE - {AGG_BACKFILL_LOOKBACK_DAYS}
-        )
+#         date_hours_in_agg_table as (
+#             select distinct 
+#                 snapshotted_on, 
+#                 snapshotted_hour
+#             from {target_table_name} 
+#             where snapshotted_on > now()::DATE - {AGG_BACKFILL_LOOKBACK_DAYS}
+#         )
 
-        select 
-            f.snapshotted_on::VARCHAR,
-            f.snapshotted_hour::INTEGER
-        from date_hours_in_fact_table f
-        left join date_hours_in_agg_table a
-        on f.snapshotted_on=a.snapshotted_on
-        and f.snapshotted_hour=a.snapshotted_hour
-        where a.snapshotted_on is null
-        and a.snapshotted_hour is null
-        order by 1,2;
-    """
-    missing_date_hours = execute_sql(sql=diff_sql)
-    return missing_date_hours
+#         select 
+#             f.snapshotted_on::VARCHAR,
+#             f.snapshotted_hour::INTEGER
+#         from date_hours_in_fact_table f
+#         left join date_hours_in_agg_table a
+#         on f.snapshotted_on=a.snapshotted_on
+#         and f.snapshotted_hour=a.snapshotted_hour
+#         where a.snapshotted_on is null
+#         and a.snapshotted_hour is null
+#         order by 1,2;
+#     """
+#     missing_date_hours = execute_sql(sql=diff_sql)
+#     print(missing_date_hours)
+#     return missing_date_hours
 
 
 def aggregate_reddit_data(source_table_name, 
@@ -77,14 +82,12 @@ def aggregate_reddit_data(source_table_name,
             select
                 *,
                 dense_rank() over(partition by subreddit
-                    order by snapshotted_hour)
+                    order by snapshotted_on, snapshotted_hour)
                     as date_hour_rank
             from 
                 {source_table_name}
             where 
-                snapshotted_on='{snapshotted_on}'
-            and 
-                snapshotted_hour IN ({snapshotted_hour-1},{snapshotted_hour})
+                snapshotted_on BETWEEN '{snapshotted_on}'::DATE - {AGG_BACKFILL_LOOKBACK_DAYS} AND '{snapshotted_on}'
         ),
 
         reddit_metric_diffs_from_consecutive_snapshots as (
@@ -114,6 +117,10 @@ def aggregate_reddit_data(source_table_name,
                 inner join fct_reddit_post_snapshots_hourly_ranked as current_snapshot
                 on previous_snapshot.post_id=current_snapshot.post_id
                 and previous_snapshot.date_hour_rank=current_snapshot.date_hour_rank-1
+            where
+                current_snapshot.snapshotted_on = '{snapshotted_on}'
+            and 
+                current_snapshot.snapshotted_hour = {snapshotted_hour}
             )
 
         select
@@ -139,7 +146,13 @@ def pipeline(is_test):
 
     create_table(target_table_name)
 
-    missing_date_hours = get_missing_date_hours(source_table_name, target_table_name)
+    missing_date_hours = get_missing_date_hours(source_table_name=source_table_name,
+                                                source_date_field=SOURCE_DATE_FIELD,
+                                                source_hour_field=SOURCE_HOUR_FIELD,
+                                                target_table_name=target_table_name, 
+                                                target_date_field=TARGET_DATE_FIELD, 
+                                                target_hour_field=TARGET_HOUR_FIELD, 
+                                                lookback_days=AGG_BACKFILL_LOOKBACK_DAYS)
 
     for date_hour in missing_date_hours:
         aggregate_reddit_data(source_table_name, 
